@@ -61,7 +61,7 @@ If you are using the default file based transaction logging store then:
 
 2. This example requires a JMS queue destination called _testQueue_. If your configuration does not contain the JMS testQueue, you must modify the standalone-full.xml file as follows:
 
-       *   Open the JBOSS_HOME/standalone/configuration/standalone-full.xml file
+       *   Open the $JBOSS_HOME/standalone/configuration/standalone-full.xml file
        *   Find `<subsystem xmlns="urn:jboss:domain:messaging:1.1">` in the file
        *   Look for `<jms-destinations>` in this section. If you see a `<jms-queue name="testQueue">`, you do not need to make any changes. You can move on to the next step.
        *   If there is a `<jms-destinations>` section under this subsystem, copy the following XML prior to `</jms-destinations>`:
@@ -79,11 +79,11 @@ If you are using the default file based transaction logging store then:
                         <entry name="java:jboss/exported/jms/queue/test"/>
                     </jms-queue>
                 </jms-destinations>
-<a id="start-server">
+<a name="start-server">
 
 3. Start JBoss Enterprise Application Platform 6 or JBoss AS 7 with the full profile using the following command: 
 
-                JBOSS_HOME/bin/standalone.sh -c standalone-full.xml
+                $JBOSS_HOME/bin/standalone.sh -c standalone-full.xml
 
 4. Build and deploy the quickstart archive
        *  Navigate to the root of this quickstart directory
