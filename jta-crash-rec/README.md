@@ -296,7 +296,7 @@ As you may have guessed, you will use the Byteman tool to halt the AS7 JVM durin
 * Open the file `$JBOSS_HOME/bin/standalone.conf` (`standalone.conf.bat` on Windows)
 * Append the following text to the end of the file:
 
-    JAVA_OPTS="-javaagent:/home/user/byteman-download-2.0.0/lib/byteman.jar=script:/home/user/quickstart/jta-crash-rec/src/main/scripts/xa.btm ${JAVA_OPTS}"
+      JAVA_OPTS="-javaagent:/home/user/byteman-download-2.0.0/lib/byteman.jar=script:/home/user/quickstart/jta-crash-rec/src/main/scripts/xa.btm ${JAVA_OPTS}"
 
 __NOTE: You should replace the file paths as appropriate for you system.__
 
