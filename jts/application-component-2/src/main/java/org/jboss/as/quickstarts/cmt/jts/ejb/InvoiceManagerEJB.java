@@ -17,11 +17,15 @@
 package org.jboss.as.quickstarts.cmt.jts.ejb;
 
 import java.rmi.RemoteException;
+import java.util.List;
 
 import javax.ejb.EJBObject;
+import javax.ejb.Remote;
 import javax.jms.JMSException;
 
+//@Remote
 public interface InvoiceManagerEJB extends EJBObject {
-
-    public void createInvoice(String name) throws RemoteException, JMSException;
+    public String createInvoice(String name) throws RemoteException;
+    public String createInvoiceInTxn(String name) throws RemoteException;
+    List<String> listInvoices() throws RemoteException;
 }

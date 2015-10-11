@@ -16,9 +16,13 @@
  */
 package org.jboss.as.quickstarts.cmt.controller;
 
+import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+import javax.ejb.CreateException;
 import javax.faces.bean.RequestScoped;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -37,22 +41,38 @@ import org.jboss.as.quickstarts.cmt.model.Customer;
 public class CustomerManager {
     private Logger logger = Logger.getLogger(CustomerManager.class.getName());
 
+    private List<String> errors;
+
     @Inject
     private CustomerManagerEJB customerManager;
+
+    @PostConstruct
+    private void init() {
+        errors = new ArrayList<>();
+    }
 
     public List<Customer> getCustomers() throws SecurityException, IllegalStateException, NamingException,
         NotSupportedException, SystemException, RollbackException, HeuristicMixedException, HeuristicRollbackException {
         return customerManager.listCustomers();
     }
 
+    public List<String> getInvoices() {
+        try {
+            return customerManager.listInvoices();
+        } catch (Exception e) {
+            errors.add(e.getMessage());
+            return errors;
+
+        }
+    }
+
     public String addCustomer(String name) {
         try {
-            customerManager.createCustomer(name);
-            return "customerAdded";
+            return customerManager.createCustomer(name);
         } catch (Exception e) {
-            logger.warning("Caught a duplicate: " + e.getMessage());
+            logger.warning(e.getMessage());
             // Transaction will be marked rollback only anyway utx.rollback();
-            return "customerDuplicate";
+            return e.getMessage();
         }
     }
 }

@@ -26,13 +26,13 @@ import javax.persistence.Table;
 
 @SuppressWarnings("serial")
 @Entity
-@Table(name = "Customer")
+//@Table(name = "Customer")
 public class Customer implements Serializable {
-    @Id
-    @GeneratedValue
+//    @Id
+//    @GeneratedValue
     private int id;
 
-    @Column(unique = true, nullable = false)
+//    @Column(unique = true, nullable = false)
     private String name;
 
     public int getId() {

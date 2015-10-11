@@ -38,6 +38,15 @@
 				<h:outputText id="id" value="#{u.id}" />
 			</h:column>
 		</h:dataTable>
+		<h1>List of invoices</h1>
+		<h:dataTable id="invoices" value="#{customerManager.invoices}" var="i">
+			<h:column>
+				<f:facet name="header">
+					Invoice Detail
+				</f:facet>
+				<h:outputText id="name" value="#{i}" />
+			</h:column>
+		</h:dataTable>
 		<h:link outcome="/addCustomer.xhtml">Go back</h:link>
 	</ui:define>
 </ui:composition>

@@ -16,29 +16,57 @@
  */
 package org.jboss.as.quickstarts.cmt.jts.ejb;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.ejb.EJBHome;
+import javax.ejb.EJBObject;
+import javax.ejb.Handle;
+import javax.ejb.Remote;
 import javax.ejb.RemoteHome;
+import javax.ejb.RemoveException;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
-import javax.jms.JMSConnectionFactory;
-import javax.jms.JMSContext;
-import javax.jms.Queue;
+import java.rmi.RemoteException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @RemoteHome(InvoiceManagerEJBHome.class)
 @Stateless
-public class InvoiceManagerEJBImpl {
 
-    @Inject
-    @JMSConnectionFactory("java:/JmsXA")
-    private JMSContext jmsContext;
-    @Resource(lookup = "java:/queue/jts-quickstart")
-    private Queue queue;
+//@Remote(InvoiceManagerEJB.class)
+
+public class InvoiceManagerEJBImpl { //} implements InvoiceManagerEJB {
+    private List<String> invoices;
+
+    @PostConstruct
+    private void init() {
+        invoices = new ArrayList<>();
+        invoices.add("initial invoice");
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public String createInvoice(String name) {
+        return addInvoice("Invoice " + name);
+    }
 
     @TransactionAttribute(TransactionAttributeType.MANDATORY)
-    public void createInvoice(String name) {
-        jmsContext.createProducer().send(queue, "Created invoice for customer named: " + name);
+    public String createInvoiceInTxn(String name) {
+        return addInvoice("Invoice in txn " + name);
+    }
 
+    private String addInvoice(String invoice) {
+        LocalDateTime time = LocalDateTime.now();
+        invoices.add(invoice + "\t" + time.toString());
+
+        return invoice;
+    }
+
+    @TransactionAttribute(TransactionAttributeType.NEVER)
+    @SuppressWarnings("unchecked")
+    public List<String> listInvoices() {
+        return invoices;
     }
 }
