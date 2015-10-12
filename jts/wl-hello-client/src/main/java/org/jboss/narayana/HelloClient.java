@@ -5,6 +5,7 @@ import org.jboss.as.quickstarts.cmt.jts.ejb.InvoiceManagerEJBHome;
 
 import java.lang.reflect.Method;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Properties;
@@ -15,6 +16,9 @@ import javax.naming.NamingException;
 import javax.rmi.PortableRemoteObject;
 
 public class HelloClient {
+    private static String WL_JNDI_NAME = "jboss-jts-application-component-2jboss-jts-application-component-2_jarInvoiceManagerEJBImpl_EO";
+
+    private List<String> errors = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
         HelloClient client = new HelloClient();
@@ -28,33 +32,41 @@ public class HelloClient {
         name = "InvoiceManagerEJB#org.jboss.as.quickstarts.cmt.jts.ejb.InvoiceManagerEJB";
         name = "jboss-jts-application-component-2jboss-jts-application-component-2_jarInvoiceManagerEJBImpl_EO";
 
-//        client.testMessageServiceRemote(name);
-        client.testInvoiceManager(name);
+        client.testInvoiceManager(WL_JNDI_NAME);
     }
 
     private void testInvoiceManager(String name) throws NamingException, RemoteException, CreateException {
-        Context context = getCLContext();
-        Object oRef = context.lookup(name);
-        System.out.printf("found object (%s) of type: %s%n", oRef.toString(), oRef.getClass().getCanonicalName());
-
-//        Method[] methods = oRef.getClass().getMethods();
-//
-//        for (Method m : methods)
-//            System.out.printf("\t%s%n", m.getName());
-
-//        InvoiceManagerEJBHome ejbHome = (InvoiceManagerEJBHome)PortableRemoteObject.narrow(oRef, InvoiceManagerEJBHome.class);
-        InvoiceManagerEJB ejb = (InvoiceManagerEJB) oRef; //ejbHome.create();
-
+        InvoiceManagerEJB ejb = getInvoiceManager(name);
 //        String res = ejb.createInvoiceInTxn("i1");
         String res = ejb.createInvoice("i1");
 
-
         System.out.printf("createInvoice returned: %s%nInvoices:%n", res);
 
-        for (String invoice : ejb.listInvoices()) {
+        for (String invoice : ejb.listInvoices())
             System.out.printf("\t%s%n", invoice);
+
+        System.out.printf("Messages:%n");
+
+        for (String msg : errors)
+            System.err.printf("%s%n", msg);
+    }
+
+    private InvoiceManagerEJB getInvoiceManager(String name) throws NamingException, RemoteException, CreateException {
+        Context context;
+        Object oRef;
+
+        try {
+            context = getCLContext();
+            errors.add("looking up " + name);
+            oRef = context.lookup(name);
+            errors.add("lookup ok");
+        } catch (Exception e) {
+            errors.add(e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
 
+        return (InvoiceManagerEJB) oRef;
     }
 
     private Context getCLContext() throws NamingException {

@@ -66,6 +66,27 @@ public class CustomerManagerEJB {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public String createCustomer(String name) throws RemoteException, JMSException, CreateException {
+        Customer c1 = new Customer();
+        c1.setName(name);
+        customers.add(c1);
+
+        try {
+            errors.add("getInvoiceManager");
+            InvoiceManagerEJB im = xgetInvoiceManager(WL_JNDI_NAME);
+
+            if (name.contains("MANDATORY"))
+                return im.createInvoiceInTxn(name);
+
+            errors.add("calling getInvoiceManager");
+            return im.createInvoice(name);
+        } catch (NamingException e) {
+            errors.add(e.getMessage());
+            throw new RemoteException(e.getMessage());
+        }
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public String xcreateCustomer(String name) throws RemoteException, JMSException, CreateException {
 
         Customer c1 = new Customer();
         c1.setName(name);
@@ -165,4 +186,56 @@ public class CustomerManagerEJB {
 
         return new InitialContext(jndiProps);
     }
+
+
+
+    private InvoiceManagerEJB xgetInvoiceManager(String name) throws NamingException, RemoteException, CreateException {
+        Context context;
+        Object oRef;
+
+        try {
+            context = xgetCLContext();
+            errors.add("looking up " + name);
+            oRef = context.lookup(name);
+            errors.add("lookup ok");
+        } catch (Exception e) {
+            errors.add(e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+
+        return (InvoiceManagerEJB) oRef;
+    }
+
+    private Context xgetCLContext() throws NamingException {
+        System.setProperty("com.sun.CORBA.ORBUseDynamicStub", "true");
+        System.setProperty("com.sun.CORBA.ORBDynamicStubFactoryFactoryClass", "com.sun.corba.se.impl.presentation.rmi.StubFactoryFactoryProxyImpl"); // a guess
+
+
+        Properties jndiProps = new Properties();
+        jndiProps.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.cosnaming.CNCtxFactory");
+        jndiProps.put(Context.INITIAL_CONTEXT_FACTORY, "org.wildfly.iiop.openjdk.naming.jndi.CNCtxFactory");
+
+
+        String[] purls = {
+                "corbaname:iiop:localhost:7001",
+                "corbaname:iiop:localhost:7001/NameService",
+                "corbaname:iiop:localhost:7001/NameServiceServerRoot",
+        };
+
+        jndiProps.put(Context.PROVIDER_URL, purls[1]);
+
+        System.out.printf("creating context ..%n");
+
+//        jndiProps.put(Context.URL_PKG_PREFIXES, "org.wildfly.iiop.openjdk.naming.jndi");
+        jndiProps.put(Context.PROVIDER_URL, "corbaloc:iiop:127.0.0.1:7001");
+
+//        jndiProps.put("org.omg.CORBA.ORBInitialHost", "127.0.0.1");
+//        jndiProps.put("org.omg.CORBA.ORBInitialPort", "7001");
+//        jndiProps.put(Context.PROVIDER_URL, WL_PROVIDER_URL);
+
+
+        return new InitialContext(jndiProps);
+    }
+
 }
