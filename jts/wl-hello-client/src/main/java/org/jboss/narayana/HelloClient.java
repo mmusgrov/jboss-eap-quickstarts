@@ -17,6 +17,14 @@ import javax.rmi.PortableRemoteObject;
 
 public class HelloClient {
     private static String WL_JNDI_NAME = "jboss-jts-application-component-2jboss-jts-application-component-2_jarInvoiceManagerEJBImpl_EO";
+    private static String WF_JNDI_NAME = "corbaname:iiop:localhost:8080#jts-quickstart/InvoiceManagerEJBImpl";
+    private static int WL_LOOKUP_PORT = 7001;
+    private static int WF_LOOKUP_PORT = 8080;
+
+    private static String JNDI_NAME;
+    private static int LOOKUP_PORT;
+    private static boolean useWL = true;
+    private static boolean useTxn = false;
 
     private List<String> errors = new ArrayList<>();
 
@@ -32,13 +40,15 @@ public class HelloClient {
         name = "InvoiceManagerEJB#org.jboss.as.quickstarts.cmt.jts.ejb.InvoiceManagerEJB";
         name = "jboss-jts-application-component-2jboss-jts-application-component-2_jarInvoiceManagerEJBImpl_EO";
 
-        client.testInvoiceManager(WL_JNDI_NAME);
+        JNDI_NAME = useWL? WL_JNDI_NAME : WF_JNDI_NAME;
+        LOOKUP_PORT = useWL?  WL_LOOKUP_PORT : WF_LOOKUP_PORT;
+
+        client.testInvoiceManager(JNDI_NAME);
     }
 
     private void testInvoiceManager(String name) throws NamingException, RemoteException, CreateException {
         InvoiceManagerEJB ejb = getInvoiceManager(name);
-//        String res = ejb.createInvoiceInTxn("i1");
-        String res = ejb.createInvoice("i1");
+        String res = useTxn ? ejb.createInvoiceInTxn("i1") : ejb.createInvoice("i1");
 
         System.out.printf("createInvoice returned: %s%nInvoices:%n", res);
 
@@ -85,7 +95,11 @@ public class HelloClient {
                 "corbaname:iiop:localhost:7001/NameServiceServerRoot",
         };
 
-        jndiProps.put(Context.PROVIDER_URL, purls[1]);
+        String purl = purls[1];
+
+        purl = "corbaname:iiop:localhost:" + LOOKUP_PORT + "/NameService";
+
+        jndiProps.put(Context.PROVIDER_URL, purl);
 
         System.out.printf("creating context ..%n");
 
