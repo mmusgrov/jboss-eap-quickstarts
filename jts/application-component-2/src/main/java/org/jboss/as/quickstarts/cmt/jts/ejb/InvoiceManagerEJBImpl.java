@@ -59,14 +59,17 @@ public class InvoiceManagerEJBImpl { //} implements InvoiceManagerEJB {
 
     private String addInvoice(String invoice) {
         LocalDateTime time = LocalDateTime.now();
-        invoices.add(invoice + "\t" + time.toString());
+        invoice = invoice + "\t" + time.toString();
+        invoices.add(invoice);
 
+        System.out.printf("InvoiceManagerEJBImpl: created invoice: %s%n", invoice);
         return invoice;
     }
 
     @TransactionAttribute(TransactionAttributeType.NEVER)
     @SuppressWarnings("unchecked")
     public List<String> listInvoices() {
+        System.out.printf("InvoiceManagerEJBImpl: returning %d invoices%n", invoices.size());
         return invoices;
     }
 }

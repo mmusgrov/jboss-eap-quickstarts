@@ -22,6 +22,7 @@
 
 <ui:composition template="template.xhtml">
 	<ui:define name="content">
+		<f:view transient="true">
 		<h:messages />
 		<h:form id="addCustomerForm">
 			<h:panelGrid columns="3">
@@ -33,6 +34,7 @@
 			</h:panelGrid>
 		</h:form>
 		<h:link outcome="/customers.xhtml">List customers</h:link>
+		</f:view>
 	</ui:define>
 </ui:composition>
 </html>

@@ -30,13 +30,16 @@ import javax.jms.JMSException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.rmi.PortableRemoteObject;
 
 import org.jboss.as.quickstarts.cmt.model.Customer;
 
 @Stateless
 public class CustomerManagerEJB {
     private static String WL_JNDI_NAME = "jboss-jts-application-component-2jboss-jts-application-component-2_jarInvoiceManagerEJBImpl_EO";
-    private static String WF_JNDI_NAME =  "jts-quickstart/InvoiceManagerEJBImpl";
+    //    private static String WF_JNDI_NAME = "jts-quickstart/InvoiceManagerEJBImpl"; //"jboss-jts-application-component-2/InvoiceManagerEJBImpl";
+    private static String WF_JNDI_NAME = "InvoiceManagerEJBImpl"; //""jboss-jts-application-component-2/InvoiceManagerEJBImpl"; //"jboss-jts-application-component-2/InvoiceManagerEJBImpl";
+
 
     //    private static String WL_PROVIDER_URL = "corbaname:iiop:127.0.0.1:7001/NameService"; 192.168.0.5
     private static String WL_PROVIDER_URL = "corbaname:iiop:192.168.0.5:7001/NameService";
@@ -75,7 +78,7 @@ public class CustomerManagerEJB {
             invoiceMgrJndiName =  WF_JNDI_NAME;
             serverPort = 7001;
             jndiContextFactory = WL_CONTEXT_FACTORY;
-            jndiProviderUrl = "corbaloc:iiop:127.0.0.1:3528"; // "corbaname:iiop:localhost:3628
+            jndiProviderUrl = "corbaloc::localhost:3528/NameService";
         } else {
             isJBoss = true;
             invoiceMgrJndiName =  WL_JNDI_NAME;
@@ -93,7 +96,7 @@ public class CustomerManagerEJB {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public String createCustomer(String name) throws RemoteException, JMSException, CreateException {
+    public String createCustomer(String name) throws JMSException, CreateException {
         Customer c1 = new Customer();
         c1.setName(name);
         customers.add(c1);
@@ -105,19 +108,27 @@ public class CustomerManagerEJB {
             return im.createInvoiceInTxn(name);
         } catch (NamingException e) {
             errors.add(e.getMessage());
-            throw new RemoteException(e.getMessage());
+            try {
+                throw new RemoteException(e.getMessage());
+            } catch (RemoteException e1) {
+                throw new RuntimeException(e1);
+            }
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @TransactionAttribute(TransactionAttributeType.NEVER)
     @SuppressWarnings("unchecked")
-    public List<String> listInvoices() throws RemoteException, CreateException {
+    public List<String> listInvoices() throws CreateException {
         try {
             InvoiceManagerEJB im = getInvoiceManager();
             return im.listInvoices();
         } catch (NamingException e) {
             errors.add(e.getMessage());
             return errors;
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -130,7 +141,7 @@ public class CustomerManagerEJB {
         return customers;
     }
 
-    private InvoiceManagerEJB getInvoiceManager() throws NamingException, RemoteException, CreateException {
+    private InvoiceManagerEJB getInvoiceManager() throws NamingException, CreateException, RemoteException {
         Context context;
         Object oRef;
 
@@ -145,7 +156,16 @@ public class CustomerManagerEJB {
             throw e;
         }
 
-        return (InvoiceManagerEJB) oRef;
+        if (isJBoss) {
+            return (InvoiceManagerEJB) oRef;
+            // not required when inside a JEE server
+//            InvoiceManagerEJBHome home = (InvoiceManagerEJBHome) PortableRemoteObject.narrow(oRef, InvoiceManagerEJBHome.class);
+//            return home.create();
+        }
+
+        InvoiceManagerEJBHome home = (InvoiceManagerEJBHome) PortableRemoteObject.narrow(oRef, InvoiceManagerEJBHome.class);
+        return home.create();
+//        return (InvoiceManagerEJB) oRef;
     }
 
     private Context oldGetRemoteJndiContext() throws NamingException {
