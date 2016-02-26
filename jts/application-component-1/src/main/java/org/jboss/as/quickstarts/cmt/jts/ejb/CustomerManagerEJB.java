@@ -31,11 +31,13 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.rmi.PortableRemoteObject;
+import javax.transaction.TransactionManager;
+import javax.transaction.xa.Xid;
 
 import org.jboss.as.quickstarts.cmt.model.Customer;
 
 @Stateless
-public class CustomerManagerEJB {
+public class CustomerManagerEJB {//implements XARCallback {
     private static String WL_JNDI_NAME = "jboss-jts-application-component-2jboss-jts-application-component-2_jarInvoiceManagerEJBImpl_EO";
     //    private static String WF_JNDI_NAME = "jts-quickstart/InvoiceManagerEJBImpl"; //"jboss-jts-application-component-2/InvoiceManagerEJBImpl";
     private static String WF_JNDI_NAME = "InvoiceManagerEJBImpl"; //""jboss-jts-application-component-2/InvoiceManagerEJBImpl"; //"jboss-jts-application-component-2/InvoiceManagerEJBImpl";
@@ -47,6 +49,9 @@ public class CustomerManagerEJB {
     private static String WF_CONTEXT_FACTORY = "org.wildfly.iiop.openjdk.naming.jndi.CNCtxFactory";
     private static String WL_CONTEXT_FACTORY = "com.sun.jndi.cosnaming.CNCtxFactory";
 
+    private TransactionManager transactionManager;
+
+    private InvoiceManagerEJB im;
     private boolean isJBoss;
     private String invoiceMgrJndiName;
     private int serverPort;
@@ -68,6 +73,9 @@ public class CustomerManagerEJB {
         System.setProperty("com.sun.CORBA.ORBUseDynamicStub", "true");
         System.setProperty("com.sun.CORBA.ORBDynamicStubFactoryFactoryClass", "com.sun.corba.se.impl.presentation.rmi.StubFactoryFactoryProxyImpl"); // a guess
 
+//        transactionManager = getTransactionManager();
+
+        im = null;
         jndiProps = new Properties();
         customers = new ArrayList<>();
         errors = new ArrayList<>();
@@ -102,6 +110,7 @@ public class CustomerManagerEJB {
         customers.add(c1);
 
         try {
+            injectFault(ASFailureType.NONE, ASFailureMode.NONE, "");
             errors.add("getInvoiceManager");
             InvoiceManagerEJB im = getInvoiceManager();
             errors.add("calling getInvoiceManager");
@@ -142,6 +151,13 @@ public class CustomerManagerEJB {
     }
 
     private InvoiceManagerEJB getInvoiceManager() throws NamingException, CreateException, RemoteException {
+        if (im == null)
+            im = createInvoiceManager();
+
+        return im;
+    }
+
+    private InvoiceManagerEJB createInvoiceManager() throws NamingException, CreateException, RemoteException {
         Context context;
         Object oRef;
 
@@ -164,6 +180,7 @@ public class CustomerManagerEJB {
         }
 
         InvoiceManagerEJBHome home = (InvoiceManagerEJBHome) PortableRemoteObject.narrow(oRef, InvoiceManagerEJBHome.class);
+
         return home.create();
 //        return (InvoiceManagerEJB) oRef;
     }
@@ -230,5 +247,72 @@ public class CustomerManagerEJB {
         jndiProps.put(Context.PROVIDER_URL, WL_PROVIDER_URL);
 
         return new InitialContext(jndiProps);
+    }
+
+     private void injectFault(ASFailureType type, ASFailureMode mode, String modeArg) {
+/*        if (transactionManager != null) {
+            ASFailureSpec fault = new ASFailureSpec("fault", mode, modeArg, type);
+            DummyXAResource res = new DummyXAResource(fault, this);
+            System.out.printf("enlisting dummy resource%n");
+            try {
+                transactionManager.getTransaction().enlistResource(res);
+            } catch (Exception e) {
+                System.out.printf("transaction enlistment not available: %s%n", e.getMessage());
+                e.printStackTrace();
+            }
+        }*/
+    }
+
+    private TransactionManager getTransactionManager() {
+        String[] names = {
+                "java:jboss/TransactionManager", // wildfly
+                "javax.transaction.TransactionManager", // weblogic
+
+                "java:/TransactionManager",
+                "java:comp/TransactionManager",
+                "java:appserver/TransactionManager",
+                "java:pm/TransactionManager",
+                "java:comp/UserTransaction"
+        };
+
+        InitialContext context;
+
+        try {
+            context = new InitialContext();
+        } catch (NamingException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        for (String name : names) {
+            try {
+                TransactionManager tm = (TransactionManager) context.lookup(name);
+
+                System.out.printf("TransactionManager JNDI name: %s%n", name);
+                return tm;
+            } catch (NamingException e) {
+            }
+        }
+
+        return null;
+    }
+
+//    @Override
+    public void commit(Xid xid, boolean onePhase) {
+        System.out.printf("CustomerManagerEJB: commit called%n");
+    }
+
+//    @Override
+    public int prepare(Xid xid) {
+        System.out.printf("CustomerManagerEJB: prepare called%n");
+
+        return 0;
+    }
+
+//    @Override
+    public int rollback(Xid xid) {
+        System.out.printf("CustomerManagerEJB: rollback called%n");
+
+        return 0;
     }
 }
