@@ -3,6 +3,7 @@ package service;
 import service.remote.ISessionHome;
 
 import javax.annotation.PostConstruct;
+import javax.ejb.Remote;
 import javax.ejb.RemoteHome;
 
 import javax.ejb.Stateless;
@@ -32,6 +33,10 @@ public class SessionBean {
 
 		counter.set(isWF ? 8000 : 7000);
 
+		System.out.printf("XXX ORBInitialHost=%s ORBInitialPort=%s%n",
+		System.getProperty("org.omg.CORBA.ORBInitialHost"),
+		System.getProperty("org.omg.CORBA.ORBInitialPort"));
+
 		try {
 			TxnHelper.registerRecoveryResources(isWF);
 		} catch (NamingException e) {
@@ -49,6 +54,7 @@ public class SessionBean {
 		try {
 			TxnHelper.addResources(isWF, failureType);
 
+			System.out.printf("%s returning next counter%n", this);
 			return String.valueOf(counter.getAndIncrement());
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage());

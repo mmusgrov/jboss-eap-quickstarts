@@ -1,6 +1,16 @@
 
 ./d.sh -a gf -f target/ejbtest.war
 
+# gf -> gf - works
+curl http://localhost:7080/ejbtest/rs/remote/3700/gf/x
+# gf -> wf - times out with javax.naming.CommunicationException: Cannot connect to ORB
+curl http://localhost:7080/ejbtest/rs/remote/3528/wf/x 
+# wf -> gf
+curl http://localhost:8080/ejbtest/rs/remote/7001/gf/x 
+
+
+
+
 # invoke domain1 which in turn uses jndi port 3700 to lookup an ejb on domain2:
 curl http://localhost:7080/ejbtest/rs/remote/3700
 

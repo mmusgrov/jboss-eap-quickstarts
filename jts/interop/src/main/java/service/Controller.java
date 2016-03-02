@@ -24,14 +24,17 @@ public class Controller {
 	@GET
 	@Path("/remote/{jndiPort}")
 	public Response getRemoteNextCount(@DefaultValue("0") @PathParam("jndiPort") int jndiPort) {
-		return getRemoteNextCountWithError(jndiPort, null);
+		return getRemoteNextCountWithASAndError(jndiPort, null, null);
 	}
 
 	@GET
-	@Path("/remote/{jndiPort}/{failureType}")
-	public Response getRemoteNextCountWithError(@DefaultValue("0") @PathParam("jndiPort") int jndiPort, @PathParam("failureType") String failureType) {
+	@Path("/remote/{jndiPort}/{as}/{failureType}")
+	public Response getRemoteNextCountWithASAndError(
+			@DefaultValue("0") @PathParam("jndiPort") int jndiPort,
+			@DefaultValue("") @PathParam("as") String as,
+			@PathParam("failureType") String failureType) {
 		return Response.status(200)
-				.entity("Next: " + service.getNext(false, jndiPort, failureType))
+				.entity("Next: " + service.getNext(false, as, jndiPort, failureType))
 				.build();
 	}
 
