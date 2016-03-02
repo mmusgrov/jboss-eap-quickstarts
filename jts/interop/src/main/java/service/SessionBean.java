@@ -7,8 +7,14 @@ import javax.ejb.RemoteHome;
 
 import javax.ejb.Stateless;
 
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.ejb.TransactionManagement;
 import javax.ejb.TransactionManagementType;
+import javax.naming.NamingException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import java.rmi.RemoteException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Stateless
@@ -18,15 +24,35 @@ import java.util.concurrent.atomic.AtomicInteger;
 @TransactionManagement(TransactionManagementType.CONTAINER)
 public class SessionBean {
 	static AtomicInteger counter = new AtomicInteger(0);
+	boolean isWF;
 
 	@PostConstruct
 	public void init() {
-		boolean isWF = System.getProperty("jboss.node.name") != null;
+		isWF = System.getProperty("jboss.node.name") != null;
 
 		counter.set(isWF ? 8000 : 7000);
+
+		try {
+			TxnHelper.registerRecoveryResources(isWF);
+		} catch (NamingException e) {
+			System.out.printf("Recovery resource registration failure: %s%n", e.getMessage());
+		}
 	}
 
+	@TransactionAttribute(TransactionAttributeType.MANDATORY)
 	public String getNext() {
-		return String.valueOf(counter.getAndIncrement());
+		return getNext(null);
 	}
+
+	@TransactionAttribute(TransactionAttributeType.MANDATORY)
+	public String getNext(String failureType) {
+		try {
+			TxnHelper.addResources(isWF, failureType);
+
+			return String.valueOf(counter.getAndIncrement());
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage());
+		}
+	}
+
 }

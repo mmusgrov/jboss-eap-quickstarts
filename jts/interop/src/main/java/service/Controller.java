@@ -2,8 +2,11 @@ package service;
 
 import javax.ejb.EJB;
 import javax.inject.Inject;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 
@@ -19,9 +22,17 @@ public class Controller {
 	}
 
 	@GET
-	@Path("/remote")
-	public String getRemoteNextCount() {
-		return "Next: " + service.getNext(false);
+	@Path("/remote/{jndiPort}")
+	public Response getRemoteNextCount(@DefaultValue("0") @PathParam("jndiPort") int jndiPort) {
+		return getRemoteNextCountWithError(jndiPort, null);
+	}
+
+	@GET
+	@Path("/remote/{jndiPort}/{failureType}")
+	public Response getRemoteNextCountWithError(@DefaultValue("0") @PathParam("jndiPort") int jndiPort, @PathParam("failureType") String failureType) {
+		return Response.status(200)
+				.entity("Next: " + service.getNext(false, jndiPort, failureType))
+				.build();
 	}
 
 	private static String stackTraceToString(Exception e) {
