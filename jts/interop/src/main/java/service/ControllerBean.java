@@ -4,7 +4,6 @@ import service.remote.ISession;
 import service.remote.ISessionHome;
 
 import javax.annotation.PostConstruct;
-import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -13,7 +12,6 @@ import javax.ejb.TransactionManagementType;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import javax.rmi.PortableRemoteObject;
 
 import java.rmi.RemoteException;
 import java.util.Properties;
@@ -27,6 +25,7 @@ public class ControllerBean {
     @PostConstruct
     public void init() {
         isWF = System.getProperty("jboss.node.name") != null;
+        System.setProperty("com.sun.CORBA.ORBUseDynamicStub", "true");
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -39,39 +38,44 @@ public class ControllerBean {
         try {
             TxnHelper.addResources(isWF);
 
-            if (as == null)
-                as = "";
-
             return getServiceEJB(local, as, jndiPort).getNext(failureType);
         } catch (Exception e) {
             return e.getMessage();
         }
     }
 
-    private ISession getGFServiceEJB(int jndiPort, String jndiName) throws RemoteException, NamingException {
+    private ISession xxxgetServiceEJB(int jndiPort, String jndiName, String facClass, String providerUrl) throws RemoteException, NamingException {
         Properties env = new Properties();
 
-        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.enterprise.naming.SerialInitContextFactory");
-        env.setProperty("org.omg.CORBA.ORBInitialHost", "localhost");
-        env.setProperty("org.omg.CORBA.ORBInitialPort", String.valueOf(jndiPort));
-
-//        name = "corbaname:iiop:localhost:3700#java:global/ejbtest/SessionBean"; //"java:global/ejbtest/SessionBean"
-
-        Object oRef = new InitialContext(env).lookup(jndiName);
-        ISessionHome home = (ISessionHome) oRef; //PortableRemoteObject.narrow(oRef, ISessionHome.class);
-
-        return home.create();
-    }
-
-    private ISession getWFServiceEJB(int jndiPort, String jndiName, String facClass) throws RemoteException, NamingException {
-        Properties env = new Properties();
-
-        System.setProperty("com.sun.CORBA.ORBUseDynamicStub", "true");
+        if (providerUrl != null) {
+            env.put(Context.PROVIDER_URL, providerUrl);
+        }
         env.put(Context.INITIAL_CONTEXT_FACTORY, facClass);
         env.setProperty("org.omg.CORBA.ORBInitialHost", "localhost");
         env.setProperty("org.omg.CORBA.ORBInitialPort", String.valueOf(jndiPort));
 
 //        name = "corbaname:iiop:localhost:3700#java:global/ejbtest/SessionBean"; //"java:global/ejbtest/SessionBean"
+
+        System.out.printf("looking up %s via port %d%n", jndiName, jndiPort);
+
+        Object oRef = new InitialContext(env).lookup(jndiName);
+
+        System.out.printf("look up returned %s%n", oRef);
+
+        ISessionHome home = (ISessionHome) oRef; //PortableRemoteObject.narrow(oRef, ISessionHome.class);
+
+        return home.create();
+    }
+
+    private ISession getServiceEJB(int jndiPort, String jndiName, String facClass, String providerUrl) throws RemoteException, NamingException {
+        Properties env = new Properties();
+
+        if (providerUrl != null)
+            env.put(Context.PROVIDER_URL, providerUrl);
+
+        env.put(Context.INITIAL_CONTEXT_FACTORY, facClass);
+        //env.setProperty("org.omg.CORBA.ORBInitialHost", "localhost");
+        //env.setProperty("org.omg.CORBA.ORBInitialPort", String.valueOf(jndiPort));
 
         System.out.printf("looking up %s via port %d%n", jndiName, jndiPort);
 
@@ -98,115 +102,53 @@ public class ControllerBean {
                 return home.create();
             } catch (Exception e) {
                 e.printStackTrace();
-                return null;
             }
         } else {
+            Properties env = new Properties();
+            String providerUrl;
+
             if (isWF) {
-                String providerUrl = "corbaloc::localhost:%d/NameService";
-                Properties env = new Properties();
+                // running on a WildFly server
+                providerUrl = "corbaloc::localhost:%d/NameService";
 
                 if (jndiPort <= 0)
-                    jndiPort = 7001;
+                    jndiPort = 7001; // corba name service port for glassfish domain1
 
-                System.setProperty("com.sun.CORBA.ORBUseDynamicStub", "true");
-
-                env.put(Context.INITIAL_CONTEXT_FACTORY, "org.wildfly.iiop.openjdk.naming.jndi.CNCtxFactory");
-                env.put(Context.PROVIDER_URL, String.format(providerUrl, jndiPort));
 
                 try {
-                    //return getWFServiceEJB(jndiPort, name, "org.wildfly.iiop.openjdk.naming.jndi.CNCtxFactory");
-
-                    Object obj = new InitialContext(env).lookup(name);
-                    ISessionHome home = (ISessionHome) obj; // PortableRemoteObject.narrow(obj, ISessionHome.class);
-
-                    return home.create();
+                    return getServiceEJB(jndiPort, name, "org.wildfly.iiop.openjdk.naming.jndi.CNCtxFactory", String.format(providerUrl, jndiPort));
                 } catch (Exception e) {
                     e.printStackTrace();
-                    return null;
                 }
 
             } else {
-                if (jndiPort <= 0)
-                    jndiPort = 3700;//3528;
+                // running on a glassfish server
+                String facClass; // set context factory depending upon whether we are looking up via glassfish or wildfly
 
-                if ("gf".equals(as)) {
-                    try {
-                        return getGFServiceEJB(jndiPort, name);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        return null;
-                    }
-                } else if ("wf".equals(as)) {
+                if ("gf".equals(as)) { // lookup an ejb running on a glassfish server
+                    facClass = "com.sun.enterprise.naming.SerialInitContextFactory";
+                    providerUrl = null;
+
                     if (jndiPort <= 0)
-                        jndiPort = 3528;
+                        jndiPort = 3700; // corba name service port for glassfish domain2
+                } else {  // lookup an ejb running on a wildfly server
+                    facClass = "com.sun.jndi.cosnaming.CNCtxFactory";
+                    providerUrl = "iiop://localhost:3528";
+                    name = "ejbtest/SessionBean";
 
-                    try {
-                        return getWFServiceEJB(jndiPort, name, "com.sun.jndi.cosnaming.CNCtxFactory");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        return null;
-                    }
+                    if (jndiPort <= 0)
+                        jndiPort = 3528; // default corba name service port for wildfly
+                }
+
+                try {
+                    return getServiceEJB(jndiPort, name, facClass, providerUrl);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
 
         return null;
     }
-
-/*
-                    if (gfgf) {
-
-//        <jndi-name>corbaname:iiop:adc6140215.us.oracle.com:3700#java:global/service-ejb/ServiceBean</jndi-name>
-
-                        jndiPort = 3700;
-                        //name = "java:global/ejbtest/SessionBean";
-                        providerUrl = "corbaloc::localhost:%d/NameService";
-
-//                        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.enterprise.naming.impl.SerialInitContextFactory");
-//                        env.put(Context.URL_PKG_PREFIXES, "com.sun.enterprise.naming");
-//                        env.put(Context.STATE_FACTORIES, "com.sun.corba.ee.impl.presentation.rmi.JNDIStateFactoryImpl");
-
-                        env.put(Context.PROVIDER_URL, String.format(providerUrl, 3700));
-                        name = "corbaname:iiop:localhost:7001#java:global/ejbtest/SessionBean";
-
-                        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.enterprise.naming.SerialInitContextFactory");
-                        env.setProperty("org.omg.CORBA.ORBInitialHost", "localhost");
-                        env.setProperty("org.omg.CORBA.ORBInitialPort", "3700");
-
-
-
-                        System.setProperty("com.sun.CORBA.ORBUseDynamicStub", "true");
-//                        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.cosnaming.CNCtxFactory");
-//                        env.put(Context.PROVIDER_URL, String.format(providerUrl, 3700));
-                        name = "java:global/ejbtest/SessionBean!service.remote.ISessionHome";
-//                        name = "corbaname:iiop:localhost:3700#java:global/ejbtest/SessionBean";
-
-                        ISessionHome home = (ISessionHome) PortableRemoteObject.narrow(new InitialContext(env).lookup(name), ISessionHome.class);
-
-                        System.out.printf("GFIIIIIIIIIIIIIIIIISH: looked up object %s%n", home);
-                        return home.create();
-                    } else {
-                        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.cosnaming.CNCtxFactory");
-                        env.put(Context.PROVIDER_URL, String.format(providerUrl, jndiPort));
-                    }
-                }
-
-                System.out.printf("Creating context to look up %s using url %s%n", name, env.get(Context.PROVIDER_URL));
-
-                ctx =  new InitialContext(env);
-            }
-
-            System.out.printf("Looking up %s%n", name);
-            Object obj = ctx.lookup(name);
-            ISessionHome home = (ISessionHome) obj; // PortableRemoteObject.narrow(obj, ISessionHome.class);
-
-            System.out.printf("GFIIIIIIIIIIIIIIIIISH: looked up object %s%n", obj);
-            return home.create();
-        } catch (Exception e) {
-            System.out.printf("*** lookup or invocation failed: %s%n", e.getMessage());
-
-            throw new RuntimeException(e);
-        }
-*/
 
 }
