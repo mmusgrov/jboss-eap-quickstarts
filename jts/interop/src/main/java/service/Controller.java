@@ -37,21 +37,4 @@ public class Controller {
 				.entity("Next: " + service.getNext(false, as, jndiPort, failureType))
 				.build();
 	}
-
-	private static String stackTraceToString(Exception e) {
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		PrintWriter writer = new PrintWriter(bytes, true);
-		Throwable cause = e.getCause();
-
-		e.printStackTrace(writer);
-
-		while (cause != null) {
-			writer.write("Caused By:");
-			writer.println();
-			cause.printStackTrace(writer);
-			cause = cause.getCause();
-		}
-
-		return bytes.toString();
-	}
 }
