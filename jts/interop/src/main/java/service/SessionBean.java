@@ -3,7 +3,6 @@ package service;
 import service.remote.ISessionHome;
 
 import javax.annotation.PostConstruct;
-import javax.ejb.Remote;
 import javax.ejb.RemoteHome;
 
 import javax.ejb.Stateless;
@@ -13,9 +12,7 @@ import javax.ejb.TransactionAttributeType;
 import javax.ejb.TransactionManagement;
 import javax.ejb.TransactionManagementType;
 import javax.naming.NamingException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import java.rmi.RemoteException;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Stateless

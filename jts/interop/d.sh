@@ -1,4 +1,5 @@
-WF_DEPLOY_DIR=/home/mmusgrov/source/forks/wildfly/wildfly.interop/build/target/wildfly-10.0.0.CR2-SNAPSHOT/standalone/deployments
+WF_DEPLOY_DIR=/home/mmusgrov/source/forks/wildfly/wildfly.interop/build/target/wildfly-10.0.0.CR3-SNAPSHOT/standalone/deployments
+WF2_DEPLOY_DIR=/home/mmusgrov/source/forks/wildfly/wildfly.interop/build/target/wildfly-10.0.0.CR3-SNAPSHOT-2/standalone/deployments
 WL_CP=/u01/app/oracle/Middleware/Oracle_Home/wlserver/server/lib/weblogic.jar   
 
 usage() { echo "$1: Usage: $0 [-a <gf|gf2|wf>] [-f <archive>] [-t <gfgf|gfwf|wfgf >]" 1>&2; exit 1; }
@@ -8,6 +9,7 @@ itest() {
   gfgf) curl http://localhost:7080/ejbtest/rs/remote/3700/gf/x ;;
   gfwf) curl http://localhost:7080/ejbtest/rs/remote/3528/wf/x ;;
   wfgf) curl http://localhost:8080/ejbtest/rs/remote/7001/gf/x ;;
+  wfwf) curl http://localhost:8080/ejbtest/rs/remote/3728/wf/x ;;
   *)
   esac
 }
@@ -29,7 +31,10 @@ case $a in
       asadmin --port 4948 deploy --force=true $f;;
   gf1) asadmin --port 4848 deploy --force=true $f;;
   gf2) asadmin --port 4948 deploy --force=true $f;;
-  wf) cp $f $WF_DEPLOY_DIR;;
+  wf)  cp $f $WF_DEPLOY_DIR
+       cp $f $WF2_DEPLOY_DIR;;
+  wf1)  cp $f $WF_DEPLOY_DIR;; # 8080 3528
+  wf2) cp $f $WF2_DEPLOY_DIR;; # 9280 3628
   *) usage "missing as"
 esac
 

@@ -12,7 +12,6 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
-import java.lang.reflect.InvocationTargetException;
 
 public class TxnHelper {
     static private final String WL_TM = "weblogic.transaction.TransactionManager";
@@ -35,14 +34,13 @@ public class TxnHelper {
         TransactionManager tm = getTransactionManager(isWF);
 
         try {
-            // com.sun.enterprise.transaction.api.JavaEETransactionManager
             if (!isWF) {
+                // com.sun.enterprise.transaction.api.JavaEETransactionManager
                 java.lang.reflect.Method method = tm.getClass().getMethod("registerRecoveryResourceHandler", XAResource.class);
                 method.invoke(tm, getResource(tm, null));
-                System.out.printf("XXXXXXXXXXXXXXXXX registered recovery resources ok%n");
             }
         } catch (Exception e) {
-            System.out.printf("XXXXXXXXXXXXXXXXX error registering recovery resources: %s%n", e.getMessage());
+            System.out.printf("Error registering recovery resources: %s%n", e.getMessage());
             e.printStackTrace();
         }
     }
