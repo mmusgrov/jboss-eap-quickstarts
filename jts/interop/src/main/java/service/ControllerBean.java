@@ -1,5 +1,6 @@
 package service;
 
+import org.omg.CORBA.ORB;
 import service.remote.ISession;
 import service.remote.ISessionHome;
 
@@ -11,6 +12,7 @@ import javax.ejb.TransactionManagement;
 import javax.ejb.TransactionManagementType;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.NamingException;
 
 import java.util.Properties;
 
@@ -58,7 +60,7 @@ public class ControllerBean {
     }
 
     private int validateJndiPort(int jndiPort, int defaultPort) {
-         return (jndiPort <= 0 ? defaultPort : jndiPort);
+        return (jndiPort <= 0 ? defaultPort : jndiPort);
     }
 
     private ISession getServiceEJB(boolean local, String as, int jndiPort) {
@@ -98,26 +100,26 @@ public class ControllerBean {
                     env.put(Context.PROVIDER_URL, String.format("iiop://localhost:%d", jndiPort));
                     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.cosnaming.CNCtxFactory");
 
-                    boolean debug = false;
-
-                    if (debug) {
-//                        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.enterprise.naming.SerialInitContextFactory");
-                        env.setProperty("org.omg.CORBA.ORBInitialHost", "localhost");
-                        env.setProperty("org.omg.CORBA.ORBInitialPort", String.valueOf(jndiPort));
+                    try {
+                        ORB orb = (ORB) new InitialContext().lookup("java:comp/ORB");
+                        env.put("java.naming.corba.orb", orb);
+                    } catch (NamingException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             }
+        }
 
-            try {
-                System.out.printf("looking up %s via port %d%n", name, jndiPort);
+        try {
+            System.out.printf("looking up %s via port %d%n", name, jndiPort);
+            InitialContext ctx = new InitialContext(env);
 
-                Object oRef = new InitialContext(env).lookup(name);
-                ISessionHome home = (ISessionHome) oRef; //PortableRemoteObject.narrow(oRef, ISessionHome.class);
+            Object oRef = ctx.lookup(name);
+            ISessionHome home = (ISessionHome) oRef; //PortableRemoteObject.narrow(oRef, ISessionHome.class);
 
-                return home.create();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            return home.create();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         return null;

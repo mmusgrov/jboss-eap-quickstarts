@@ -4,6 +4,7 @@ import org.jboss.narayana.ASFailureMode;
 import org.jboss.narayana.ASFailureSpec;
 import org.jboss.narayana.ASFailureType;
 import org.jboss.narayana.DummyXAResource;
+import org.jboss.narayana.DummyXAResourceRecoveryHelper;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -31,6 +32,9 @@ public class TxnHelper {
     }
 
     static void registerRecoveryResources(boolean isWF) throws NamingException {
+        if (isWF)
+            DummyXAResourceRecoveryHelper.registerRecoveryResources();
+
         TransactionManager tm = getTransactionManager(isWF);
 
         try {
