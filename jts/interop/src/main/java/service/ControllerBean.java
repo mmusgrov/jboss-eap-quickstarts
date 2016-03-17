@@ -29,17 +29,24 @@ public class ControllerBean {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public String getNext(boolean local) {
-        return getNext(local, null, 0, null);
+    public String getNext(boolean local, String arg) {
+        return getNext(local, null, 0, arg);
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public String getNext(boolean local, String as, int jndiPort, String failureType) {
         try {
-            TxnHelper.addResources(isWF);
+            boolean enlistAfter = failureType != null && failureType.contains("after");
+
+            if (!enlistAfter)
+                TxnHelper.addResources(isWF);
+
             String res = "";
             for (ISession ejb : getServiceEJBs(local, as, jndiPort))
                 res = ejb.getNext(failureType);
+
+            if (enlistAfter)
+                TxnHelper.addResources(isWF);
 
             return res;
         } catch (Exception e) {

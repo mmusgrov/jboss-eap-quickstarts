@@ -4,7 +4,6 @@ import org.jboss.narayana.ASFailureMode;
 import org.jboss.narayana.ASFailureSpec;
 import org.jboss.narayana.ASFailureType;
 import org.jboss.narayana.DummyXAResource;
-import org.jboss.narayana.DummyXAResourceRecoveryHelper;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -24,6 +23,9 @@ public class TxnHelper {
     }
 
     static void addResources(boolean isWF, String failureType) throws NamingException, SystemException, RollbackException {
+//        if (failureType != null && failureType.contains("recovery"))
+//            registerRecoveryResources(isWF);
+
         TransactionManager tm = getTransactionManager(isWF);
 
         assert tm.getTransaction() != null;
@@ -31,7 +33,7 @@ public class TxnHelper {
         tm.getTransaction().enlistResource(getResource(tm, failureType));
     }
 
-    static void registerRecoveryResources(boolean isWF) throws NamingException {
+/*    static void registerRecoveryResources(boolean isWF) throws NamingException {
         if (isWF)
             DummyXAResourceRecoveryHelper.registerRecoveryResources();
 
@@ -47,7 +49,7 @@ public class TxnHelper {
             System.out.printf("Error registering recovery resources: %s%n", e.getMessage());
             e.printStackTrace();
         }
-    }
+    }*/
 
     static TransactionManager getTransactionManager(boolean isWF) throws NamingException {
         if (isWF)

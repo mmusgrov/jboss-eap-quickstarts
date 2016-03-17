@@ -30,11 +30,11 @@ public class SessionBean {
 
 		counter.set(isWF ? 8000 : 7000);
 
-		try {
+/*		try {
 			TxnHelper.registerRecoveryResources(isWF);
 		} catch (NamingException e) {
 			System.out.printf("Recovery resource registration failure: %s%n", e.getMessage());
-		}
+		}*/
 	}
 
 	@TransactionAttribute(TransactionAttributeType.MANDATORY)

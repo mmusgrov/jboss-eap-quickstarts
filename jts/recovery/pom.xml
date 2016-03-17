@@ -25,8 +25,8 @@
       -->
     </dependency>
     <dependency>
-      <groupId>org.jboss.narayana.jta</groupId>
-      <artifactId>jta</artifactId>
+      <groupId>org.jboss.narayana.jts</groupId>
+      <artifactId>jtax</artifactId>
       <version>5.2.6.Final-SNAPSHOT</version>
     </dependency>
 
@@ -45,9 +45,32 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>2.3.2</version>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Dependencies>org.jboss.jts</Dependencies>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -62,18 +85,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-             <manifestEntries>
-                <Dependencies>org.jboss.jts</Dependencies>
-             </manifestEntries>
-          </archive>
-       </configuration>
-     </plugin>
-
     </plugins>
   </build>
 </project>

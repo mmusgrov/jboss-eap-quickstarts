@@ -13,9 +13,9 @@ public class Controller {
 	ControllerBean service;
 
 	@GET
-	@Path("/local")
-	public String getLocalNextCount() {
-		return "Next: " + service.getNext(true);
+	@Path("/local/{arg}")
+	public String getLocalNextCount(@DefaultValue("") @PathParam("arg") String arg) {
+		return "Next: " + service.getNext(true, arg);
 	}
 
 	@GET
